@@ -27,6 +27,16 @@
 
 #include "libavformat/avformat.h"
 
+const char program_name[] = "ffkeyframes";
+const int program_birth_year = 2021;
+
+void show_help_default(const char *opt, const char *arg)
+{
+    av_log(NULL, AV_LOG_INFO, "Simple video keyframe extractor\n");
+    av_log(NULL, AV_LOG_INFO, "usage: %s input_file interval\n", program_name);
+    av_log(NULL, AV_LOG_INFO, "\n");
+}
+
 int main (int argc, char **argv)
 {
     const char *src_filename = NULL;
