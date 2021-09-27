@@ -29,15 +29,9 @@
 
 int main (int argc, char **argv)
 {
-    AVFormatContext *fmt_ctx = NULL;
     const char *src_filename = NULL;
-    int interval = NULL;
 
-    int video_stream_idx = -1;
-    AVPacket *pkt;
     int ret, i = 0;
-    AVRational time_base;
-    int64_t scaled_interval, timestamp = 0, last_pts = -1;
     
     if (argc != 3) {
         fprintf(stderr, "Usage: %s <video> <interval>\n", argv[0]);
@@ -45,13 +39,17 @@ int main (int argc, char **argv)
     }
 
     src_filename = argv[1];
-    interval = argv[2];
+    int interval = strtol(argv[2], NULL, 10);
 
+    AVFormatContext *fmt_ctx = NULL;
     if ((ret = avformat_open_input(&fmt_ctx, src_filename, NULL, NULL)) < 0) {
         fprintf(stderr, "Could not open source file %s\n", src_filename);
         goto end;
     }
 
+    int video_stream_idx = -1;
+    AVRational time_base;
+    // discard all non-video streams to make it slightly faster
     for (i = 0; i < fmt_ctx->nb_streams; i++)
     {
         if (fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && video_stream_idx < 0) {
@@ -63,13 +61,21 @@ int main (int argc, char **argv)
         }
     }
 
+    // exit if we didn't find a video stream
+    if ((ret = video_stream_idx) < 0) {
+        goto end;
+    }
+
+    AVPacket *pkt;
+
     pkt = av_packet_alloc();
-    scaled_interval = av_rescale(
+    int64_t scaled_interval = av_rescale(
         interval,
         time_base.den,
         time_base.num
     );
 
+    int64_t timestamp = 0, last_pts = -1;
     while (avformat_seek_file(fmt_ctx, video_stream_idx, timestamp, timestamp, timestamp, 0) >= 0) {
         if (av_read_frame(fmt_ctx, pkt) < 0) {
             break;
@@ -85,7 +91,8 @@ int main (int argc, char **argv)
         av_packet_unref(pkt);
     }
 
-    ret = 0;
+    // it is assumed to have been successful if we found at least one keyframe
+    ret = timestamp > 0;
 
 end:
     avformat_close_input(&fmt_ctx);
