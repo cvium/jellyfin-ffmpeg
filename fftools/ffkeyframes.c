@@ -26,6 +26,7 @@
  */
 
 #include "libavformat/avformat.h"
+#include "cmdutils.h"
 
 const char program_name[] = "ffkeyframes";
 const int program_birth_year = 2021;
