@@ -31,7 +31,7 @@ int main (int argc, char **argv)
 {
     AVFormatContext *fmt_ctx = NULL;
     const char *src_filename = NULL;
-    const int interval = NULL;
+    int interval = NULL;
 
     int video_stream_idx = -1;
     AVPacket *pkt;
