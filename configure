@@ -1912,9 +1912,7 @@ LICENSE_LIST="
 "
 
 PROGRAM_LIST="
-    ffplay
-    ffprobe
-    ffmpeg
+    ffkeyframes
 "
 
 SUBSYSTEM_LIST="
