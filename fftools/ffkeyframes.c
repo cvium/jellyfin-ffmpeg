@@ -30,25 +30,28 @@
 int main (int argc, char **argv)
 {
     const char *src_filename = NULL;
+    int interval = 0;
 
-    int ret, i = 0;
-    
+    AVPacket *pkt;
+    AVFormatContext *fmt_ctx = NULL;
+
+    AVRational time_base;
+    int ret, i = 0, video_stream_idx = -1;
+    int64_t scaled_interval, timestamp = 0, last_pts = -1;
+
     if (argc != 3) {
         fprintf(stderr, "Usage: %s <video> <interval>\n", argv[0]);
         exit(1);
     }
 
     src_filename = argv[1];
-    int interval = strtol(argv[2], NULL, 10);
+    interval = strtol(argv[2], NULL, 10);
 
-    AVFormatContext *fmt_ctx = NULL;
     if ((ret = avformat_open_input(&fmt_ctx, src_filename, NULL, NULL)) < 0) {
         fprintf(stderr, "Could not open source file %s\n", src_filename);
         goto end;
     }
 
-    int video_stream_idx = -1;
-    AVRational time_base;
     // discard all non-video streams to make it slightly faster
     for (i = 0; i < fmt_ctx->nb_streams; i++)
     {
@@ -66,16 +69,13 @@ int main (int argc, char **argv)
         goto end;
     }
 
-    AVPacket *pkt;
-
     pkt = av_packet_alloc();
-    int64_t scaled_interval = av_rescale(
+    scaled_interval = av_rescale(
         interval,
         time_base.den,
         time_base.num
     );
 
-    int64_t timestamp = 0, last_pts = -1;
     while (avformat_seek_file(fmt_ctx, video_stream_idx, timestamp, timestamp, timestamp, 0) >= 0) {
         if (av_read_frame(fmt_ctx, pkt) < 0) {
             break;
@@ -84,7 +84,7 @@ int main (int argc, char **argv)
         if (pkt->flags & AV_PKT_FLAG_KEY && last_pts < pkt->pts) {
             last_pts = pkt->pts;
             timestamp = pkt->pts;
-            printf("%ld\n", pkt->pts);
+            printf("%lld\n", pkt->pts);
         }
 
         timestamp += scaled_interval;
